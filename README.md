@@ -16,8 +16,14 @@ Stock selection with machine learning
   * support_vector_machine.py
   * deep_neural_network.py
 
+* results:
+  the results of average weight portfolio
+
 * run.py and run_sample.ipynb
   running all four models in model dictionary, and you can open run_sample.ipynb(or run_sample.html) to see how to using the model
+
+* portfolio.py
+  calculate the equity when we have the weight of portfolio and plot
 
 * genetic_algorithm.py
   Genatic Algorithm using in factors selection

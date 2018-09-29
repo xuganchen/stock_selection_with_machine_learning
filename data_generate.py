@@ -174,8 +174,8 @@ if __name__ == '__main__':
     # np.save(os.path.join(fpath, "Y.npy"), Y)
 
 
-    fpath = "F:\\DeepLearning\\Data\\outsample"
-    frequency = 1
+    fpath = "F:\\DeepLearning\\Data\\insample"
+    frequency = 5
 
     factors, prices = DataGenerate_WithoutQuantile(fpath, frequency)
 
