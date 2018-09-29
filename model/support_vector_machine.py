@@ -29,7 +29,7 @@ class SupportVectorMachine(AbstractModel):
         ):
             raise ValueError("Should input 'X_train, Y_train, X_test, Y_test' or 'fpath'")
 
-        self.type = ModelType.LR
+        self.type = ModelType.SVM
 
         if fpath is None:
             self.X_train = X_train

@@ -16,6 +16,9 @@ Stock selection with machine learning
   * support_vector_machine.py
   * deep_neural_network.py
 
+* run.py
+  running all four models in model dictionary
+
 * genetic_algorithm.py
   Genatic Algorithm using in factors selection
 
