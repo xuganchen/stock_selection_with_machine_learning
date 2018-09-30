@@ -33,14 +33,26 @@ class GA(object):
 
     def newPopulation(self):
         print("  Begin newPopulation")
-        chromosomes = np.random.randint(0, 2, (self.populationSize, self.num))
-        small = np.sum(chromosomes, axis=1) < (self.populationSize // 2)
-        chromosomes[small, :] = 1 - chromosomes[small,  :]
-        population = chromosomes
+        population = self._generate_random(down = self.populationSize // 2,
+                                            up = self.num - self.populationSize // 2)
+
         prob, _, _ = self.Fitness(population)
         self.best_probsList.append(np.max(prob))
         self.best_factorsList.append(population[np.argmax(prob), :])
         return population
+
+    def _generate_random(self, down, up):
+        num = np.random.randint(down, up, self.populationSize)
+        chromosomes = None
+        for i in num:
+            chromosome = np.concatenate((np.ones(i), np.zeros(self.num - i)))
+            permutation = np.random.permutation(self.num)
+            chromosome = chromosome[permutation]
+            if chromosomes is None:
+                chromosomes = chromosome.reshape(1, -1)
+            else:
+                chromosomes = np.concatenate((chromosomes, chromosome.reshape(1, -1)))
+        return chromosomes
 
     def CheckChromosome(self, chromosome):
         if np.sum(chromosome) >= 2:
@@ -134,25 +146,36 @@ class GA(object):
             mut_population = self.Mutation(cro_population)
 
             prob, cum_fitness, fitness = self.Fitness(mut_population)
+            init_population = mut_population
+
             self.best_probsList.append(np.max(prob))
-            self.best_factorsList.append(mut_population[np.argmax(prob), :])
+            ans = mut_population[np.argmax(prob), :]
+            self.best_factorsList.append(ans)
+            print("\n", sum(ans), "\n")
 
         self.best_probs = np.max(self.best_probsList)
         self.best_factors = self.best_factorsList[np.argmax(self.best_probsList)]
 
 
 if __name__ == '__main__':
-    np.random.seed(12345)
     fpath = "F:\\DeepLearning\\Data"
+
+    #fpath_sample = os.path.join(fpath, "sample")
+    #X = np.load(os.path.join(fpath_sample, "X.npy"))
+    #Y = np.load(os.path.join(fpath_sample, "Y.npy"))
+    #X_train = X[:800, :]
+    #Y_train = Y[:800].reshape(-1,1)
+    #X_test = X[800:, :]
+    #Y_test = Y[800:].reshape(-1,1)
+
     fpath_insample = os.path.join(fpath, "insample")
     fpath_outsample = os.path.join(fpath, "outsample")
-
     X_train = np.load(os.path.join(fpath_insample, "X.npy"))
     Y_train = np.load(os.path.join(fpath_insample, "Y.npy"))
     X_test = np.load(os.path.join(fpath_outsample, "X.npy"))
     Y_test = np.load(os.path.join(fpath_outsample, "Y.npy"))
 
-    ga = GA(X_train, Y_train, X_test, Y_test, populationSize=10)
+    ga = GA(X_train, Y_train, X_test, Y_test, populationSize=50, iteration = 20)
     ga.Start()
 
     result = {
@@ -161,6 +184,7 @@ if __name__ == '__main__':
         "best_probs": ga.best_probs,
         "best_probsList": ga.best_probsList
     }
+    print(ga.best_probs, "\n", sum(ga.best_factors))
 
     with open("F:\\DeepLearning\\result_GA.pkl", 'wb+') as file:
         pkl.dump(result, file)

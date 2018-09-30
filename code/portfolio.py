@@ -36,15 +36,12 @@ def calcu_portfolio(model,
     portfolio_probas = np.array(portfolio_probas)
 
     # Step 2: backtesting
-    total = init_equity
-    equity = [total]
+    portfolios_weight = []
     for i in range(len(portfolios)):
         portfolio = portfolios[i]
-        portfolio = portfolio / sum(portfolio)
-        prices = Y_portfolio[i]
-        returns = prices[:, -1] / prices[:, 0]
-        total = total * np.dot(portfolio, returns)
-        equity.append(total)
+        portfolio_weight = portfolio / sum(portfolio)
+        portfolios_weight.append(portfolio_weight)
+    equity = backtesting(portfolios_weight, Y_portfolio, init_equity)
 
     # Step 3: plot
     fig = plt.figure(figsize=(10, 5))
@@ -61,6 +58,30 @@ def calcu_portfolio(model,
         fig.savefig(os.path.join(savepath, fname))
 
     return equity
+
+def backtesting(portfolios_weight,
+                Y_portfolio,
+                init_equity = 100000):
+    '''
+    backtesting
+
+    :param portfolios_weight: the array of portfolio, buy or not buy, 1/0,
+                                and the shape is (len, 300)
+    :param Y_portfolio: the price of every stocks for everyday
+    :param init_equity: initial euiqty
+    :return:
+    '''
+    total = init_equity
+    equity = [total]
+    for i in range(len(portfolios_weight)):
+        portfolio_weight = portfolios_weight[i]
+        prices = Y_portfolio[i]
+        returns = prices[:, -1] / prices[:, 0]
+        total = total * np.dot(portfolio_weight, returns)
+        equity.append(total)
+    return equity
+
+
 
 def plot_frequency(equitys,
                    fname,
