@@ -41,10 +41,11 @@ def DataGenerate_WithQuantile(fpath,
     dv_basic.load_dataview(basic_path)
 
     index_member = dv_basic.get_field("index_member")
+    trade_status = dv_basic.get_field("trade_status")
     price = dv_basic.get_field("close_adj")
-    index_member = index_member.loc[dv.start_date: dv.end_date]
     price = price.loc[dv.start_date: dv.end_date]
-
+    index_member = index_member.loc[dv.start_date: dv.end_date]
+    trade_status = trade_status.loc[dv.start_date: dv.end_date]
 
     # Data Processing
 
@@ -53,8 +54,10 @@ def DataGenerate_WithQuantile(fpath,
     for i in range(price.shape[0]):
         ## Step 1: get data
         today = price.index[i]
+        today_status = trade_status.loc[today]
         print(today)
         today_stock = index_member.columns[index_member.iloc[i] == 1.0].values
+        today_stock = np.array([stock for stock in today_stock if today_status[stock]])
         df = price.iloc[i:i+frequency][today_stock]
 
         if df.shape[0] != frequency:
@@ -129,9 +132,11 @@ def DataGenerate_WithoutQuantile(fpath,
     dv_basic.load_dataview(basic_path)
 
     index_member = dv_basic.get_field("index_member")
+    trade_status = dv_basic.get_field("trade_status")
     price = dv_basic.get_field("close_adj")
-    index_member = index_member.loc[dv.start_date: dv.end_date]
     price = price.loc[dv.start_date: dv.end_date]
+    index_member = index_member.loc[dv.start_date: dv.end_date]
+    trade_status = trade_status.loc[dv.start_date: dv.end_date]
 
     factors = []
     prices = []
@@ -139,8 +144,10 @@ def DataGenerate_WithoutQuantile(fpath,
         if i % frequency == 0:
             ## Step 1: get data
             today = price.index[i]
+            today_status = trade_status.loc[today]
             print(today)
             today_stock = index_member.columns[index_member.iloc[i] == 1.0].values
+            today_stock = np.array([stock for stock in today_stock if today_status[stock]])
             df = price.iloc[i:i+frequency][today_stock].values.T
 
             ## Step 2: replace nan with mean and data normalization
@@ -164,25 +171,25 @@ def DataGenerate_WithoutQuantile(fpath,
 
 
 if __name__ == '__main__':
-    # fpath = "F:\\DeepLearning\\Data\\insample"
-    # frequency = 3
-    # quantile = 0.05
-    #
-    # X, Y = DataGenerate_WithQuantile(fpath, quantile, frequency)
-    #
-    # np.save(os.path.join(fpath, "X.npy"), X)
-    # np.save(os.path.join(fpath, "Y.npy"), Y)
-
-
-    fpath = "F:\\DeepLearning\\Data\\insample"
+    fpath = "F:\\DeepLearning\\Data\\outsample"
     frequency = 5
+    quantile = 0.05
 
-    factors, prices = DataGenerate_WithoutQuantile(fpath, frequency)
+    X, Y = DataGenerate_WithQuantile(fpath, quantile, frequency)
 
-    np.save(os.path.join(fpath, "factors_" + str(frequency) + "days.npy"), factors)
-    np.save(os.path.join(fpath, "prices_" + str(frequency) + "days.npy"), prices)
+    np.save(os.path.join(fpath, "X.npy"), X)
+    np.save(os.path.join(fpath, "Y.npy"), Y)
 
-    print(factors.shape)
-    print(factors[0].shape)
-    print(prices.shape)
-    print(prices[0].shape)
+
+    # fpath = "F:\\DeepLearning\\Data\\outsample"
+    # frequency = 30
+    #
+    # factors, prices = DataGenerate_WithoutQuantile(fpath, frequency)
+    #
+    # np.save(os.path.join(fpath, "factors_" + str(frequency) + "days.npy"), factors)
+    # np.save(os.path.join(fpath, "prices_" + str(frequency) + "days.npy"), prices)
+    #
+    # print(factors.shape)
+    # print(factors[0].shape)
+    # print(prices.shape)
+    # print(prices[0].shape)

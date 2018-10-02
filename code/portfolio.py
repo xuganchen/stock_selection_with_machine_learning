@@ -34,6 +34,8 @@ def calcu_portfolio(model,
         portfolio_probas.append(portfolio_proba)
     portfolios = np.array(portfolios)
     portfolio_probas = np.array(portfolio_probas)
+    np.save(os.path.join(savepath, "portfolios.npy"), portfolios)
+    np.save(os.path.join(savepath, "portfolio_probas.npy"), portfolio_probas)
 
     # Step 2: backtesting
     portfolios_weight = []
@@ -44,18 +46,9 @@ def calcu_portfolio(model,
     equity = backtesting(portfolios_weight, Y_portfolio, init_equity)
 
     # Step 3: plot
-    fig = plt.figure(figsize=(10, 5))
-    plt.plot(equity)
-    plt.hlines(100000, 0, len(portfolios), color='black', linestyle='--')
-    plt.ylabel("equity")
     if fname is None:
-        plt.title(model.type)
-    else:
-        plt.title(fname)
-    if isshow:
-        plt.show()
-    if savepath is not None:
-        fig.savefig(os.path.join(savepath, fname))
+        fname = mode.type
+    plot_backtest(equity, fname, savepath, isshow)
 
     return equity
 
@@ -81,6 +74,17 @@ def backtesting(portfolios_weight,
         equity.append(total)
     return equity
 
+def plot_backtest(equity, fname = None, savepath = None, isshow = None):
+    fig = plt.figure(figsize=(10, 5))
+    plt.plot(equity)
+    plt.hlines(100000, 0, len(equity), color='black', linestyle='--')
+    plt.ylabel("equity")
+    if fname is not None:
+        plt.title(fname)
+    if isshow:
+        plt.show()
+    if savepath is not None:
+        fig.savefig(os.path.join(savepath, fname))
 
 
 def plot_frequency(equitys,

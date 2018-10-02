@@ -31,18 +31,20 @@ class GA(object):
         self.mutationProb = mutationProb
         self.iteraton = iteration
 
+        self.up = self.num - self.populationSize // 2
+        self.down = self.populationSize // 2
+
     def newPopulation(self):
         print("  Begin newPopulation")
-        population = self._generate_random(down = self.populationSize // 2,
-                                            up = self.num - self.populationSize // 2)
+        population = self._generate_random()
 
         prob, _, _ = self.Fitness(population)
         self.best_probsList.append(np.max(prob))
         self.best_factorsList.append(population[np.argmax(prob), :])
         return population
 
-    def _generate_random(self, down, up):
-        num = np.random.randint(down, up, self.populationSize)
+    def _generate_random(self):
+        num = np.random.randint(self.down, self.up, self.populationSize)
         chromosomes = None
         for i in num:
             chromosome = np.concatenate((np.ones(i), np.zeros(self.num - i)))
@@ -55,7 +57,7 @@ class GA(object):
         return chromosomes
 
     def CheckChromosome(self, chromosome):
-        if np.sum(chromosome) >= 2:
+        if self.down <= np.sum(chromosome) <= self.up:
             return True
         else:
             return False
@@ -160,14 +162,6 @@ class GA(object):
 if __name__ == '__main__':
     fpath = "F:\\DeepLearning\\Data"
 
-    #fpath_sample = os.path.join(fpath, "sample")
-    #X = np.load(os.path.join(fpath_sample, "X.npy"))
-    #Y = np.load(os.path.join(fpath_sample, "Y.npy"))
-    #X_train = X[:800, :]
-    #Y_train = Y[:800].reshape(-1,1)
-    #X_test = X[800:, :]
-    #Y_test = Y[800:].reshape(-1,1)
-
     fpath_insample = os.path.join(fpath, "insample")
     fpath_outsample = os.path.join(fpath, "outsample")
     X_train = np.load(os.path.join(fpath_insample, "X.npy"))
@@ -175,7 +169,7 @@ if __name__ == '__main__':
     X_test = np.load(os.path.join(fpath_outsample, "X.npy"))
     Y_test = np.load(os.path.join(fpath_outsample, "Y.npy"))
 
-    ga = GA(X_train, Y_train, X_test, Y_test, populationSize=50, iteration = 20)
+    ga = GA(X_train, Y_train, X_test, Y_test, populationSize=100, iteration = 20)
     ga.Start()
 
     result = {
