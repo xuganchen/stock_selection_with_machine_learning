@@ -9,8 +9,12 @@ class ModelType(Enum):
     SVM = 2
     DNN = 3
     LSTM = 4
-    STACK = 5
-
+    NB = 5
+    GBM = 6
+    BAG = 7
+    ET = 8
+    ADA = 9
+    EXS = 10
 
 
 class AbstractModel(object):

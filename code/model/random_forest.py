@@ -44,7 +44,7 @@ class RandomForest(AbstractModel):
         '''
         Generate model with empty class
         '''
-        model = RandomForestClassifier(n_estimators=100, max_depth=4, verbose=1)
+        model = RandomForestClassifier(n_estimators=100, max_depth=4, verbose=0)
         return model
 
     def evalution(self, is_GA = False):

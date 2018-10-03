@@ -1,13 +1,11 @@
 from .base import ModelType, AbstractModel
 
-from keras.models import Sequential
-from keras.layers import Dense
-from keras.regularizers import L1L2
-from keras.models import model_from_json
+from sklearn.ensemble import ExtraTreesClassifier
+from sklearn.externals import joblib
 import os
 import numpy as np
 
-class LogisticRegression(AbstractModel):
+class ExtraTrees(AbstractModel):
     def __init__(self,
                  X_train = None,
                  Y_train = None,
@@ -15,7 +13,7 @@ class LogisticRegression(AbstractModel):
                  Y_test = None,
                  fpath = None):
         '''
-        The LogisticRegression model class
+        The ExtraTrees model class
 
         :param X_train: training data
         :param Y_train: training target
@@ -31,7 +29,7 @@ class LogisticRegression(AbstractModel):
         ):
             raise ValueError("Should input 'X_train, Y_train, X_test, Y_test' or 'fpath'")
 
-        self.type = ModelType.LR
+        self.type = ModelType.ET
 
         if fpath is None:
             self.X_train = X_train
@@ -46,11 +44,7 @@ class LogisticRegression(AbstractModel):
         '''
         Generate model with empty class
         '''
-        input = self.X_train.shape[1]
-        model = Sequential()
-        reg = L1L2(l1=0.01, l2=0.01)
-        model.add(Dense(1, input_dim=input, activation="sigmoid", kernel_regularizer=reg))
-        model.compile(loss="binary_crossentropy", optimizer="rmsprop", metrics=['accuracy'])
+        model = ExtraTreesClassifier(n_estimators=100, max_depth=4, verbose=0)
         return model
 
     def evalution(self, is_GA = False):
@@ -62,12 +56,9 @@ class LogisticRegression(AbstractModel):
             if is_GA is True: AUC
             if is_GA is False: Accuracy, Precision, Recall, F1, TPR, FPR, AUC
         '''
-        if is_GA:
-            self.model.fit(self.X_train, self.Y_train, epochs=5, batch_size=128, verbose=0)
-        else:
-            self.model.fit(self.X_train, self.Y_train, epochs=100, batch_size=20, verbose=0)
-
-        Y_pred = self.model.predict(self.X_test)
+        self.model.fit(self.X_train, self.Y_train)
+        Y_pred = self.model.predict_proba(self.X_test)
+        Y_pred = Y_pred[:,1]
         Y_test = self.Y_test
         return self.calculate(Y_test, Y_pred, is_GA=is_GA)
 
@@ -83,14 +74,9 @@ class LogisticRegression(AbstractModel):
         '''
         if os.path.exists(fpath):
             try:
-                with open(os.path.join(fpath, 'LR_model_architecture.json'), 'r') as f:
-                    model = model_from_json(f.read())
+                model = joblib.load(os.path.join(fpath, 'RF_model.pkl'))
             except:
-                raise FileExistsError("The dictionary {} doesn't exist model json file".format(fpath))
-            try:
-                model.load_weights(os.path.join(fpath, 'LR_model_weights.h5'))
-            except:
-                raise FileExistsError("The dictionary {} doesn't exist model h5 file".format(fpath))
+                raise FileExistsError("The dictionary {} doesn't exist model pkl file".format(fpath))
             return model
         else:
             raise FileExistsError("The dictionary {} doesn't exist model files".format(fpath))
@@ -107,13 +93,8 @@ class LogisticRegression(AbstractModel):
         '''
         if not os.path.exists(fpath):
             os.makedirs(fpath)
-        self.model.save_weights(os.path.join(fpath, 'LR_model_weights.h5'))
-        with open(os.path.join(fpath, 'LR_model_architecture.json'), 'w') as f:
-            f.write(self.model.to_json())
-        print("The LogisticRegression Model save in \n  {} and \n  {}".format(
-            os.path.join(fpath, 'LR_model_weights.h5'),
-            os.path.join(fpath, 'LR_model_architecture.json')
-        ))
+        joblib.dump(self.model, os.path.join(fpath, 'RF_model.pkl'))
+        print("The ExtraTrees Model save in \n  {}".format(os.path.join(fpath, 'RF_model.pkl')))
 
     def evalution_with_data(self, X_test, Y_test):
         '''
@@ -143,5 +124,5 @@ class LogisticRegression(AbstractModel):
         :param X_test: the data using into model.predict_proba
         :return: np.array of probability data([0, 1])
         '''
-        Y_pred = self.model.predict_proba(X_test)
+        Y_pred = self.model.predict_proba(X_test)[:,1]
         return Y_pred.reshape(-1)

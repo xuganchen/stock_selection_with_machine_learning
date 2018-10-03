@@ -140,11 +140,13 @@ def DataGenerate_WithoutQuantile(fpath,
 
     factors = []
     prices = []
+    todays = []
     for i in range(price.shape[0]):
         if i % frequency == 0:
             ## Step 1: get data
             today = price.index[i]
             today_status = trade_status.loc[today]
+            todays.append(today)
             print(today)
             today_stock = index_member.columns[index_member.iloc[i] == 1.0].values
             today_stock = np.array([stock for stock in today_stock if today_status[stock]])
@@ -162,34 +164,60 @@ def DataGenerate_WithoutQuantile(fpath,
             prices.append(df)
     factors = np.array(factors)
     prices = np.array(prices)
-    # prices = prices
+    todays = np.array(todays)
 
-    return factors, prices
+    return factors, prices, todays
 
 
-
+def get_mean_cum_return(return_data, cum_freq = 60, start_date = 20141231):
+    start_date_index = np.where(return_data.index == start_date)[0][0]
+    mean_cum_returns = pd.DataFrame(index=return_data.index[start_date_index:], columns=return_data.columns)
+    for index in range(return_data.shape[0]):
+        if index >= start_date_index:
+            today = return_data.index[index]
+            today_daily_return = return_data.iloc[index - cum_freq + 1:index + 1]
+            stock_cum_returns = {}
+            for stock in today_daily_return.columns:
+                stock_return = today_daily_return[stock]
+                stock_cum_return = stock_return.rolling(10).apply(lambda x: (x + 1).cumprod()[-1] - 1)
+                stock_cum_return_done = []
+                for i in range(len(stock_cum_return)):
+                    if i % 10 == 9:
+                        stock_cum_return_done.append(stock_cum_return.iloc[i])
+                stock_cum_returns[stock] = stock_cum_return_done
+            stock_cum_returns = pd.DataFrame(stock_cum_returns, columns=stock_cum_returns.keys())
+            mean_cum_returns.loc[today] = np.mean(stock_cum_returns)
+            print(today)
+    return mean_cum_returns
 
 
 if __name__ == '__main__':
-    fpath = "F:\\DeepLearning\\Data\\outsample"
-    frequency = 5
-    quantile = 0.05
-
-    X, Y = DataGenerate_WithQuantile(fpath, quantile, frequency)
-
-    np.save(os.path.join(fpath, "X.npy"), X)
-    np.save(os.path.join(fpath, "Y.npy"), Y)
-
-
     # fpath = "F:\\DeepLearning\\Data\\outsample"
-    # frequency = 30
+    # frequency = 5
+    # quantile = 0.05
     #
-    # factors, prices = DataGenerate_WithoutQuantile(fpath, frequency)
+    # X, Y = DataGenerate_WithQuantile(fpath, quantile, frequency)
+    #
+    # np.save(os.path.join(fpath, "X.npy"), X)
+    # np.save(os.path.join(fpath, "Y.npy"), Y)
+
+    # # frequencyList = [3, 5, 7, 10, 12, 15, 18, 20, 25, 30]
+    # fpath = "F:\\DeepLearning\\Data\\outsample"
+    # frequency = 18
+    #
+    # factors, prices, todays = DataGenerate_WithoutQuantile(fpath, frequency)
     #
     # np.save(os.path.join(fpath, "factors_" + str(frequency) + "days.npy"), factors)
     # np.save(os.path.join(fpath, "prices_" + str(frequency) + "days.npy"), prices)
+    # np.save(os.path.join(fpath, "todays_" + str(frequency) + "days.npy"), todays)
     #
     # print(factors.shape)
     # print(factors[0].shape)
     # print(prices.shape)
     # print(prices[0].shape)
+    # print(todays.shape)
+
+    # filepath = "F:\\DeepLearning\\data\\outsample_total"
+    # return_data = pd.read_hdf(os.path.join(filepath, "daily_return.h5"))
+    # mean_cum_returns = get_mean_cum_return(return_data)
+    # mean_cum_returns.to_hdf(os.path.join(filepath, "mean_cum_returns.h5"), key="mean_cum_returns")

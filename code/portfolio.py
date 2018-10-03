@@ -4,26 +4,19 @@ import os
 import matplotlib.pyplot as plt
 
 
-def calcu_portfolio(model,
-                    X_portfolio,
-                    Y_portfolio,
-                    savepath = None,
-                    fname = None,
-                    isshow = True,
-                    init_equity = 100000):
+def prediction(model,
+              X_portfolio,
+              savepath = None,
+              fname = None):
     '''
-    calculate the equity when we have the weight of portfolio.
+    prediction model
 
     :param model: the model class
     :param X_portfolio: the test data, shape = (len, 300, 299)
-    :param Y_portfolio: price series of every window, shape = (len, 300, 3)
     :param savepath: the dictionary path to save the figure
     :param fname: the name of figure
-    :param isshow: True or False
-    :param init_equity: initial equity
     :return:
     '''
-    # Step 1: prediction
     portfolios = []
     portfolio_probas = []
     for i in range(len(X_portfolio)):
@@ -34,23 +27,10 @@ def calcu_portfolio(model,
         portfolio_probas.append(portfolio_proba)
     portfolios = np.array(portfolios)
     portfolio_probas = np.array(portfolio_probas)
-    np.save(os.path.join(savepath, "portfolios.npy"), portfolios)
-    np.save(os.path.join(savepath, "portfolio_probas.npy"), portfolio_probas)
-
-    # Step 2: backtesting
-    portfolios_weight = []
-    for i in range(len(portfolios)):
-        portfolio = portfolios[i]
-        portfolio_weight = portfolio / sum(portfolio)
-        portfolios_weight.append(portfolio_weight)
-    equity = backtesting(portfolios_weight, Y_portfolio, init_equity)
-
-    # Step 3: plot
-    if fname is None:
-        fname = mode.type
-    plot_backtest(equity, fname, savepath, isshow)
-
-    return equity
+    if savepath is not None:
+        np.save(os.path.join(savepath, fname + "_portfolios.npy"), portfolios)
+        np.save(os.path.join(savepath, fname + "_portfolio_probas.npy"), portfolio_probas)
+    return portfolios, portfolio_probas
 
 def backtesting(portfolios_weight,
                 Y_portfolio,

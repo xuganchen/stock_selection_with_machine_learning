@@ -44,7 +44,7 @@ class SupportVectorMachine(AbstractModel):
         '''
         Generate model with empty class
         '''
-        model = svm.SVC(kernel=kernel, C=C, probability=True, verbose=1)
+        model = svm.SVC(kernel=kernel, C=C, probability=True, verbose=0)
         return model
 
 

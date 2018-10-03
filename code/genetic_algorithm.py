@@ -153,7 +153,8 @@ class GA(object):
             self.best_probsList.append(np.max(prob))
             ans = mut_population[np.argmax(prob), :]
             self.best_factorsList.append(ans)
-            print("\n", sum(ans), "\n")
+            print("\n", sum(ans))
+            print(ans, "\n")
 
         self.best_probs = np.max(self.best_probsList)
         self.best_factors = self.best_factorsList[np.argmax(self.best_probsList)]
@@ -169,7 +170,7 @@ if __name__ == '__main__':
     X_test = np.load(os.path.join(fpath_outsample, "X.npy"))
     Y_test = np.load(os.path.join(fpath_outsample, "Y.npy"))
 
-    ga = GA(X_train, Y_train, X_test, Y_test, populationSize=100, iteration = 20)
+    ga = GA(X_train, Y_train, X_test, Y_test, populationSize=50, iteration = 10)
     ga.Start()
 
     result = {

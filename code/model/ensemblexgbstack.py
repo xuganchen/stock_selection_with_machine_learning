@@ -1,13 +1,12 @@
 from .base import ModelType, AbstractModel
+from . import AdaBoost, Bagging, ExtraTrees, GradientBoostingMachine, RandomForest
 
-from keras.models import Sequential
-from keras.layers import Dense
-from keras.regularizers import L1L2
-from keras.models import model_from_json
+import xgboost as xgb
+from sklearn.externals import joblib
 import os
 import numpy as np
 
-class LogisticRegression(AbstractModel):
+class EnsembleXgbStack(AbstractModel):
     def __init__(self,
                  X_train = None,
                  Y_train = None,
@@ -15,7 +14,7 @@ class LogisticRegression(AbstractModel):
                  Y_test = None,
                  fpath = None):
         '''
-        The LogisticRegression model class
+        The RandomForest model class
 
         :param X_train: training data
         :param Y_train: training target
@@ -31,13 +30,14 @@ class LogisticRegression(AbstractModel):
         ):
             raise ValueError("Should input 'X_train, Y_train, X_test, Y_test' or 'fpath'")
 
-        self.type = ModelType.LR
+        self.type = ModelType.EXS
 
         if fpath is None:
             self.X_train = X_train
             self.Y_train = Y_train
             self.X_test = X_test
             self.Y_test = Y_test
+            self.leng = self.X_train.shape[0] // 3
             self.model = self._generate_model()
         else:
             self.model = self._load_model(fpath)
@@ -46,12 +46,35 @@ class LogisticRegression(AbstractModel):
         '''
         Generate model with empty class
         '''
-        input = self.X_train.shape[1]
-        model = Sequential()
-        reg = L1L2(l1=0.01, l2=0.01)
-        model.add(Dense(1, input_dim=input, activation="sigmoid", kernel_regularizer=reg))
-        model.compile(loss="binary_crossentropy", optimizer="rmsprop", metrics=['accuracy'])
+        X_train1 = self.X_train[: -self.leng, :]
+        Y_train1 = self.Y_train[: -self.leng]
+        X_train2 = self.X_train[-self.leng:, :]
+        Y_train2 = self.Y_train[-self.leng:]
+
+        self.ada = AdaBoost(X_train1, Y_train1, X_train2, Y_train2)
+        self.bag = Bagging(X_train1, Y_train1, X_train2, Y_train2)
+        self.et = ExtraTrees(X_train1, Y_train1, X_train2, Y_train2)
+        self.gb = GradientBoostingMachine(X_train1, Y_train1, X_train2, Y_train2)
+        self.rf = RandomForest(X_train1, Y_train1, X_train2, Y_train2)
+
+        self.ada.model.fit(X_train1, Y_train1)
+        self.bag.model.fit(X_train1, Y_train1)
+        self.et.model.fit(X_train1, Y_train1)
+        self.gb.model.fit(X_train1, Y_train1)
+        self.rf.model.fit(X_train1, Y_train1)
+
+        model = xgb.XGBRegressor(max_depth=7, objective="reg:logistic", learning_rate=0.5, n_estimators=500)
         return model
+
+    def _generate_X(self, X_train2):
+        Y1 = self.ada.predict_proba(X_train2).reshape(-1, 1)
+        Y2 = self.bag.predict_proba(X_train2).reshape(-1, 1)
+        Y3 = self.et.predict_proba(X_train2).reshape(-1, 1)
+        Y4 = self.gb.predict_proba(X_train2).reshape(-1, 1)
+        Y5 = self.rf.predict_proba(X_train2).reshape(-1, 1)
+        X_frompred = np.concatenate((Y1, Y2, Y3, Y4, Y5), axis=1)
+        return X_frompred
+
 
     def evalution(self, is_GA = False):
         '''
@@ -62,12 +85,13 @@ class LogisticRegression(AbstractModel):
             if is_GA is True: AUC
             if is_GA is False: Accuracy, Precision, Recall, F1, TPR, FPR, AUC
         '''
-        if is_GA:
-            self.model.fit(self.X_train, self.Y_train, epochs=5, batch_size=128, verbose=0)
-        else:
-            self.model.fit(self.X_train, self.Y_train, epochs=100, batch_size=20, verbose=0)
+        X_train2 = self.X_train[-self.leng:, :]
+        Y_train2 = self.Y_train[-self.leng:]
+        X_frompred = self._generate_X(X_train2)
+        self.model.fit(X_frompred, Y_train2)
 
-        Y_pred = self.model.predict(self.X_test)
+        X_test_frompred = self._generate_X(self.X_test)
+        Y_pred = self.model.predict(X_test_frompred)
         Y_test = self.Y_test
         return self.calculate(Y_test, Y_pred, is_GA=is_GA)
 
@@ -83,14 +107,14 @@ class LogisticRegression(AbstractModel):
         '''
         if os.path.exists(fpath):
             try:
-                with open(os.path.join(fpath, 'LR_model_architecture.json'), 'r') as f:
-                    model = model_from_json(f.read())
+                self.ada = AdaBoost(fpath=fpath)
+                self.bag = Bagging(fpath=fpath)
+                self.et = ExtraTrees(fpath=fpath)
+                self.gb = GradientBoostingMachine(fpath=fpath)
+                self.rf = RandomForest(fpath=fpath)
+                model = joblib.load(os.path.join(fpath, 'EXS_model.pkl'))
             except:
-                raise FileExistsError("The dictionary {} doesn't exist model json file".format(fpath))
-            try:
-                model.load_weights(os.path.join(fpath, 'LR_model_weights.h5'))
-            except:
-                raise FileExistsError("The dictionary {} doesn't exist model h5 file".format(fpath))
+                raise FileExistsError("The dictionary {} doesn't exist model pkl file".format(fpath))
             return model
         else:
             raise FileExistsError("The dictionary {} doesn't exist model files".format(fpath))
@@ -107,13 +131,13 @@ class LogisticRegression(AbstractModel):
         '''
         if not os.path.exists(fpath):
             os.makedirs(fpath)
-        self.model.save_weights(os.path.join(fpath, 'LR_model_weights.h5'))
-        with open(os.path.join(fpath, 'LR_model_architecture.json'), 'w') as f:
-            f.write(self.model.to_json())
-        print("The LogisticRegression Model save in \n  {} and \n  {}".format(
-            os.path.join(fpath, 'LR_model_weights.h5'),
-            os.path.join(fpath, 'LR_model_architecture.json')
-        ))
+        self.ada.save_model(fpath)
+        self.bag.save_model(fpath)
+        self.et.save_model(fpath)
+        self.gb.save_model(fpath)
+        self.rf.save_model(fpath)
+        joblib.dump(self.model, os.path.join(fpath, 'EXS_model.pkl'))
+        print("The EnsembleXgbStack Model save in \n  {}".format(os.path.join(fpath, 'EXS_model.pkl')))
 
     def evalution_with_data(self, X_test, Y_test):
         '''
@@ -123,7 +147,9 @@ class LogisticRegression(AbstractModel):
         :param Y_test: the true target data
         :return: Accuracy, Precision, Recall, F1, TPR, FPR, AUC
         '''
-        Y_pred = self.model.predict(X_test)
+
+        X_test_frompred = self._generate_X(X_test)
+        Y_pred = self.model.predict(X_test_frompred)
         return self.calculate(Y_test, Y_pred)
 
     def predict(self, X_test):
@@ -133,7 +159,9 @@ class LogisticRegression(AbstractModel):
         :param X_test: the data using into model.predict
         :return: np.array of classifed data(0 or 1)
         '''
-        Y_pred = self.model.predict(X_test)
+
+        X_test_frompred = self._generate_X(X_test)
+        Y_pred = self.model.predict(X_test_frompred)
         return np.round(Y_pred).reshape(-1)
 
     def predict_proba(self, X_test):
@@ -143,5 +171,7 @@ class LogisticRegression(AbstractModel):
         :param X_test: the data using into model.predict_proba
         :return: np.array of probability data([0, 1])
         '''
-        Y_pred = self.model.predict_proba(X_test)
+
+        X_test_frompred = self._generate_X(X_test)
+        Y_pred = self.model.predict(X_test_frompred)
         return Y_pred.reshape(-1)

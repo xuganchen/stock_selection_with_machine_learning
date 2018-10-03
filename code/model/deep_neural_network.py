@@ -69,7 +69,7 @@ class DNN(AbstractModel):
             if is_GA is True: AUC
             if is_GA is False: Accuracy, Precision, Recall, F1, TPR, FPR, AUC
         '''
-        self.model.fit(self.X_train, self.Y_train, epochs=100, batch_size=20, verbose=1)
+        self.model.fit(self.X_train, self.Y_train, epochs=100, batch_size=20, verbose=0)
 
         Y_pred = self.model.predict(self.X_test)
         Y_pred = Y_pred[:,1]
