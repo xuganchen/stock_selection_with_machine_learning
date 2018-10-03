@@ -4,6 +4,23 @@ import os
 import matplotlib.pyplot as plt
 
 
+def get_avg_weight(pred_data):
+    '''
+    calculate weights using average weight method from pred_data
+
+    :param pred_data: the array of portfolio, buy or not buy, 1/0,
+                                and the shape is (len, 300)
+    :return: the weights of portfolio
+    '''
+    weights = []
+    for i in range(pred_data.shape[0]):
+        pred = pred_data[i]
+        total = sum(pred > 0)
+        weight = pred / total
+        weights.append(weight)
+    return np.array(weights)
+
+
 def prediction(model,
               X_portfolio,
               savepath = None,
@@ -47,16 +64,18 @@ def backtesting(portfolios_weight,
     total = init_equity
     equity = [total]
     for i in range(len(portfolios_weight)):
-        portfolio_weight = portfolios_weight[i]
+        portfolio_weight = portfolios_weight[i].reshape(-1)
         prices = Y_portfolio[i]
         returns = prices[:, -1] / prices[:, 0]
         total = total * np.dot(portfolio_weight, returns)
         equity.append(total)
-    return equity
+    return np.array(equity)
 
 def plot_backtest(equity, fname = None, savepath = None, isshow = None):
     fig = plt.figure(figsize=(10, 5))
-    plt.plot(equity)
+    returns = equity[-1] / equity[0] - 1
+    label = '{:.3%}'.format(returns)
+    plt.plot(equity, label=str(label))
     plt.hlines(100000, 0, len(equity), color='black', linestyle='--')
     plt.ylabel("equity")
     if fname is not None:
@@ -64,6 +83,8 @@ def plot_backtest(equity, fname = None, savepath = None, isshow = None):
     if isshow:
         plt.show()
     if savepath is not None:
+        if not os.path.exists(savepath):
+            os.makedirs(savepath)
         fig.savefig(os.path.join(savepath, fname))
 
 
@@ -101,6 +122,8 @@ def plot_frequency(equitys,
     if isshow:
         plt.show()
     if savepath is not None:
+        if not os.path.exists(savepath):
+            os.makedirs(savepath)
         fig.savefig(os.path.join(savepath, fname))
 
 

@@ -170,6 +170,14 @@ def DataGenerate_WithoutQuantile(fpath,
 
 
 def get_mean_cum_return(return_data, cum_freq = 60, start_date = 20141231):
+    '''
+    generate the mean of cummulativa return for each periods
+
+    :param return_data: return data for everyday
+    :param cum_freq: periods
+    :param start_date:
+    :return:
+    '''
     start_date_index = np.where(return_data.index == start_date)[0][0]
     mean_cum_returns = pd.DataFrame(index=return_data.index[start_date_index:], columns=return_data.columns)
     for index in range(return_data.shape[0]):

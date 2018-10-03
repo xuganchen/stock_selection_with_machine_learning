@@ -119,9 +119,9 @@ class BlackLitterman(object):
 
             # weight
             w = np.dot((self.delta * V).I, miu)
-
-            weights.append(w / sum(w)[0][0])
-            print(today)
+            w = w / sum(w)
+            weights.append(w[0,0]
+            # print(today)
 
         return weights
 
