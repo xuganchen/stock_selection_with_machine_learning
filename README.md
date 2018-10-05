@@ -32,3 +32,14 @@ Stock selection with machine learning
   * blacklitterman.py
 
     the Black Litterman Model 
+
+* results:
+  the results of the processes
+
+  * 20181003-135120:
+    training: 20050701-20141231
+    testing: 20141231-20180701
+
+  * 20181004-214808
+    training: 20050701-20121231
+    testing: 20121231-20180701
