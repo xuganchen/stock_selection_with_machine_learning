@@ -1,6 +1,5 @@
 import os
 import json
-import errno
 import numpy as np
 import pandas as pd
 import warnings
@@ -260,4 +259,52 @@ class DataView(object):
         self.data_d.columns = self.data_d.columns.remove_unused_levels()
         self.data_benchmark = self.data_benchmark.loc[pd.IndexSlice[start_date: end_date]]
 
+
+if __name__ == '__main__':
+    # BASICINFOR_NAME = "basic_infor"
+    # FININDICATOR_NAME = "finIndicator"
+    # TECHNICALINDEX_NAME = "technical_index"
+    # fpath = "F:\\DeepLearning\\Data\\total\\"
+    #
+    # basic_path = os.path.join(fpath, BASICINFOR_NAME)
+    # fin_path = os.path.join(fpath, FININDICATOR_NAME)
+    # tech_path = os.path.join(fpath, TECHNICALINDEX_NAME)
+    #
+    # dv = DataView()
+    # dv.load_dataview(tech_path)
+    #
+    # start_date = 20050701
+    # end_date = 20121231
+    # # start_date = 20121231
+    # # end_date = 20180701
+    #
+    # dv.reflash_data(start_date=start_date, end_date=end_date)
+    #
+    # fsavepath = "F:\\DeepLearning\\Data\\insample\\"
+    # fffbasic_path = os.path.join(fsavepath, BASICINFOR_NAME)
+    # ffffin_path = os.path.join(fsavepath, FININDICATOR_NAME)
+    # ffftech_path = os.path.join(fsavepath, TECHNICALINDEX_NAME)
+    #
+    # dv.save_dataview(ffftech_path)
+
+    BASICINFOR_NAME = "basic_infor"
+    FININDICATOR_NAME = "finIndicator"
+    TECHNICALINDEX_NAME = "technical_index"
+    fpath = "F:\\DeepLearning\\Data\\insample\\"
+
+    basic_path = os.path.join(fpath, BASICINFOR_NAME)
+    fin_path = os.path.join(fpath, FININDICATOR_NAME)
+    tech_path = os.path.join(fpath, TECHNICALINDEX_NAME)
+
+    dv = DataView()
+    dv.load_dataview(fin_path)
+    dvnew = DataView()
+    dvnew.load_dataview(tech_path)
+
+    dv.data_d = pd.merge(dv.data_d, dvnew.data_d, left_index=True, right_index=True, how='left')
+    dv.data_d = dv.data_d.sort_index(axis=1)
+    dv.data_d.columns = dv.data_d.columns.remove_unused_levels()
+    dv.fields = dv.fields + dvnew.fields
+
+    dv.save_dataview(fpath)
 

@@ -5,6 +5,7 @@ except:
 import numpy as np
 import pandas as pd
 import os
+from cvxopt import solvers, matrix
 
 BASICINFOR_NAME = "basic_infor"
 FININDICATOR_NAME = "finIndicator"
@@ -20,6 +21,7 @@ class BlackLitterman(object):
                  pred_data,
                  days,
                  freq,
+                 pred_data_kind = "proba",
                  cum_freq = 60,
                  tau = 0.01,
                  delta = 0.5,
@@ -32,6 +34,11 @@ class BlackLitterman(object):
         self.pred_data = pred_data
         self.days = days
         self.freq = freq
+        if (pred_data_kind != "proba") and (pred_data_kind != "bool"):
+            raise ValueError("The pred_data_kind should be 'proba' or 'bool'")
+        else:
+            self.pred_data_kind = pred_data_kind
+
 
         self.cum_freq = cum_freq
         self.tau = tau
@@ -68,7 +75,7 @@ class BlackLitterman(object):
             betas.append(beta[1, 0])
         betas = np.array(betas) / var_mkt_return
 
-        pi = betas * (mean_mkt_return - today_risk_free).values
+        pi = betas * (mean_mkt_return - today_risk_free.values[0]) + today_risk_free.values[0]
 
         return np.matrix(pi).T
 
@@ -77,11 +84,15 @@ class BlackLitterman(object):
         return np.matrix(cov)
 
     def get_q_P_Omega(self, pred_data, today_mean_cum_returns):
-        rank = pred_data.argsort().argsort()
-        threshold = len(rank) // 2
-        P = rank
-        P[rank >= threshold] = 1
-        P[rank < threshold] = -1
+        if self.pred_data_kind == "proba":
+            rank = pred_data.argsort().argsort()
+            threshold = len(rank) // 2
+            P = rank
+            P[rank >= threshold] = 1
+            P[rank < threshold] = -1
+        elif self.pred_data_kind == "bool":
+            P = pred_data
+            P[P == 0] = -1
 
         qqq = P * today_mean_cum_returns
 
@@ -101,7 +112,7 @@ class BlackLitterman(object):
             i = np.where(self.return_data.index == today)[0][0]
             today_daily_return = self.return_data.iloc[i - self.cum_freq + 1:i + 1][today_stock]
             today_mean_cum_returns = self.mean_cum_returns.loc[today, today_stock]
-            today_mkt_return = self.market_data.iloc[i - self.cum_freq + 1:i + 1]['mkt_return']
+            today_mkt_return = self.market_data.iloc[i - self.cum_freq + 1:i + 1]['market_data']
             today_risk_free = self.risk_free.loc[today]
             pred_data = self.pred_data[index]
 
@@ -117,11 +128,26 @@ class BlackLitterman(object):
             # V
             V = first_part
 
-            # weight
-            w = np.dot((self.delta * V).I, miu)
-            w = w / sum(w)
-            weights.append(w[0,0]
-            # print(today)
+            # # weight
+            # w = np.dot((self.delta * V).I, miu)
+            # w = w / sum(w)
+            # weights.append(np.array(w).reshape(-1))
+            # # print(today)
+
+
+            # optimazation
+            PP = matrix(self.delta * V)
+            qq = matrix(-1 * pi)
+            GG = matrix(np.concatenate((-1 * np.eye(len(pi)), np.eye(len(pi)))))
+            hh = matrix(np.concatenate((0.02 * np.ones(len(pi)), 0.02 * np.ones(len(pi)))))
+            # hh = matrix(np.concatenate((np.zeros(len(pi)), 0.02 * np.ones(len(pi)))))
+            AA = matrix(np.ones(len(pi)).reshape(1, -1))
+            bb = matrix([1.0])
+
+            solvers.options['show_progress'] = False
+            sol = solvers.qp(PP, qq, GG, hh, AA, bb)
+            w = np.array(sol['x'])
+            weights.append(w.reshape(-1))
 
         return weights
 

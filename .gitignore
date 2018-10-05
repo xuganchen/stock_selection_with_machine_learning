@@ -1,3 +1,7 @@
+# Myself
+./code/process_results.ipynb
+./code/try_dataview.ipynb
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

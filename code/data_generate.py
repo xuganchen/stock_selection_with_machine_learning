@@ -1,6 +1,6 @@
 try:
     from .dataview import DataView
-except ModuleNotFoundError:
+except:
     from dataview import DataView
 import numpy as np
 import pandas as pd
@@ -169,7 +169,7 @@ def DataGenerate_WithoutQuantile(fpath,
     return factors, prices, todays
 
 
-def get_mean_cum_return(return_data, cum_freq = 60, start_date = 20141231):
+def get_mean_cum_return(return_data, cum_freq = 60, start_date = 20121231):
     '''
     generate the mean of cummulativa return for each periods
 
@@ -199,8 +199,35 @@ def get_mean_cum_return(return_data, cum_freq = 60, start_date = 20141231):
     return mean_cum_returns
 
 
+def get_benchmark_data(fpath, frequency = 10):
+    '''
+    calculate the benchmark price for every freq periods
+
+    :param fpath:
+    :param frequency:
+    :param start_date:
+    :return:
+    '''
+
+    basic_path = os.path.join(fpath, BASICINFOR_NAME)
+    dv_basic = DataView()
+    dv_basic.load_dataview(basic_path)
+    data_benchmark = dv_basic.data_benchmark
+    data_benchmark = data_benchmark.loc[dv_basic.start_date: dv_basic.end_date]
+
+    data = []
+    for i in range(data_benchmark.shape[0]):
+        if i % frequency == 0:
+            df = data_benchmark.iloc[i:i + frequency].values
+            returns = df[-1] / df[0]
+            data.append(returns)
+    data = np.array(data)
+    return data
+
+
+
 if __name__ == '__main__':
-    # fpath = "F:\\DeepLearning\\Data\\outsample"
+    # fpath = "F:\\DeepLearning\\Data\\insample"
     # frequency = 5
     # quantile = 0.05
     #
@@ -209,23 +236,35 @@ if __name__ == '__main__':
     # np.save(os.path.join(fpath, "X.npy"), X)
     # np.save(os.path.join(fpath, "Y.npy"), Y)
 
-    # # frequencyList = [3, 5, 7, 10, 12, 15, 18, 20, 25, 30]
-    # fpath = "F:\\DeepLearning\\Data\\outsample"
-    # frequency = 18
-    #
-    # factors, prices, todays = DataGenerate_WithoutQuantile(fpath, frequency)
-    #
-    # np.save(os.path.join(fpath, "factors_" + str(frequency) + "days.npy"), factors)
-    # np.save(os.path.join(fpath, "prices_" + str(frequency) + "days.npy"), prices)
-    # np.save(os.path.join(fpath, "todays_" + str(frequency) + "days.npy"), todays)
-    #
-    # print(factors.shape)
-    # print(factors[0].shape)
-    # print(prices.shape)
-    # print(prices[0].shape)
-    # print(todays.shape)
 
-    # filepath = "F:\\DeepLearning\\data\\outsample_total"
-    # return_data = pd.read_hdf(os.path.join(filepath, "daily_return.h5"))
-    # mean_cum_returns = get_mean_cum_return(return_data)
-    # mean_cum_returns.to_hdf(os.path.join(filepath, "mean_cum_returns.h5"), key="mean_cum_returns")
+
+    # frequencyList = [3, 5, 7, 10, 12, 15, 18, 20, 25, 30]
+    # fpath = "F:\\DeepLearning\\Data\\outsample"
+    #
+    # for frequency in frequencyList:
+    #     factors, prices, todays = DataGenerate_WithoutQuantile(fpath, frequency)
+    #
+    #     np.save(os.path.join(fpath, "factors_" + str(frequency) + "days.npy"), factors)
+    #     np.save(os.path.join(fpath, "prices_" + str(frequency) + "days.npy"), prices)
+    #     np.save(os.path.join(fpath, "todays_" + str(frequency) + "days.npy"), todays)
+    #
+    #     print("\n", frequency)
+    #     print(factors.shape)
+    #     print(factors[0].shape)
+    #     print(prices.shape)
+    #     print(prices[0].shape)
+    #     print(todays.shape)
+
+
+
+    filepath = "F:\\DeepLearning\\data\\outsample_total"
+    return_data = pd.read_hdf(os.path.join(filepath, "return_data.h5"))
+    mean_cum_returns = get_mean_cum_return(return_data)
+    mean_cum_returns.to_hdf(os.path.join(filepath, "mean_cum_returns.h5"), key="mean_cum_returns")
+
+
+    # fpath = "F:\\DeepLearning\\Data\\outsample"
+    # frequencyList = [3, 5, 7, 10, 12, 15, 18, 20, 25, 30]
+    # for frequency in frequencyList:
+    #     data = get_benchmark_data(fpath, frequency=frequency)
+    #     np.save(os.path.join(fpath, "benchmark_returns_" + str(frequency) + "days.npy"), data)

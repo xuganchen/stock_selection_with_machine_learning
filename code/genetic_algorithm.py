@@ -181,5 +181,5 @@ if __name__ == '__main__':
     }
     print(ga.best_probs, "\n", sum(ga.best_factors))
 
-    with open("F:\\DeepLearning\\result_GA.pkl", 'wb+') as file:
+    with open("F:\\DeepLearning\\Model\\result_GA.pkl", 'wb+') as file:
         pkl.dump(result, file)
