@@ -74,7 +74,7 @@ class AdaBoost(AbstractModel):
         '''
         if os.path.exists(fpath):
             try:
-                model = joblib.load(os.path.join(fpath, 'RF_model.pkl'))
+                model = joblib.load(os.path.join(fpath, 'ADA_model.pkl'))
             except:
                 raise FileExistsError("The dictionary {} doesn't exist model pkl file".format(fpath))
             return model
@@ -93,8 +93,8 @@ class AdaBoost(AbstractModel):
         '''
         if not os.path.exists(fpath):
             os.makedirs(fpath)
-        joblib.dump(self.model, os.path.join(fpath, 'RF_model.pkl'))
-        print("The AdaBoost Model save in \n  {}".format(os.path.join(fpath, 'RF_model.pkl')))
+        joblib.dump(self.model, os.path.join(fpath, 'ADA_model.pkl'))
+        print("The AdaBoost Model save in \n  {}".format(os.path.join(fpath, 'ADA_model.pkl')))
 
     def evalution_with_data(self, X_test, Y_test):
         '''

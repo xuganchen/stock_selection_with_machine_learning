@@ -101,7 +101,7 @@ class BlackLitterman(object):
         return np.matrix(q), np.matrix(P), np.matrix(Omega)
 
 
-    def get_weights(self):
+    def get_weights(self, a=0.036):
         weights = []
         for index in range(len(self.days)):
             today = self.days[index]
@@ -137,11 +137,11 @@ class BlackLitterman(object):
 
             # optimazation
             PP = matrix(self.delta * V)
-            qq = matrix(-1 * pi)
-            GG = matrix(np.concatenate((-1 * np.eye(len(pi)), np.eye(len(pi)))))
-            hh = matrix(np.concatenate((0.02 * np.ones(len(pi)), 0.02 * np.ones(len(pi)))))
-            # hh = matrix(np.concatenate((np.zeros(len(pi)), 0.02 * np.ones(len(pi)))))
-            AA = matrix(np.ones(len(pi)).reshape(1, -1))
+            qq = matrix(-1 * miu)
+            GG = matrix(np.concatenate((-1 * np.eye(len(miu)), np.eye(len(miu)))))
+            hh = matrix(np.concatenate((a * np.ones(len(miu)), a * np.ones(len(miu)))))
+            # hh = matrix(np.concatenate((0.02 * np.ones(len(pi)), 0.02 * np.ones(len(pi)))))
+            AA = matrix(np.ones(len(miu)).reshape(1, -1))
             bb = matrix([1.0])
 
             solvers.options['show_progress'] = False

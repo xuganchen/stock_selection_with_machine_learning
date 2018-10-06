@@ -72,15 +72,16 @@ def backtesting(portfolios_weight,
         equity.append(total)
     return np.array(equity)
 
-def plot_backtest(equity, bench_equity, fname = None, savepath = None, isshow = None):
+def plot_backtest(equity, bench_equity, fname = None, savepath = None, isshow = None,
+                  start_date="20121231", end_date="20180701"):
     fig = plt.figure(figsize=(10, 5))
     returns = equity[-1] / equity[0] - 1
     returns_ben = bench_equity[-1] / bench_equity[0] - 1
     label = fname + ':  {:.3%}'.format(returns)
     label_ben = "HS300" + ':  {:.3%}'.format(returns_ben)
-    plt.plot(equity, label=str(label))
-    plt.plot(bench_equity, label=str(label_ben))
-    plt.hlines(100000, 0, len(equity), color='black', linestyle='--')
+    equity.plot(label=str(label))
+    bench_equity.plot(label=str(label_ben))
+    plt.hlines(100000, pd.Timestamp(start_date), pd.Timestamp(end_date), color='black', linestyle='--')
     plt.ylabel("equity")
     plt.legend()
     if fname is not None:
@@ -93,62 +94,12 @@ def plot_backtest(equity, bench_equity, fname = None, savepath = None, isshow = 
         fig.savefig(os.path.join(savepath, fname))
 
 
-def plot_frequency(equitys,
-                   fname,
-                   savepath=None,
-                   isshow=True):
-    '''
-    plot the frequency model under different model
-
-    :param equitys: the dict of equity, dict = {model: equity series}
-    :param savepath: the dictionary path to save the figure
-    :param fname: the name of figure
-    :param isshow: True or False
-    :return:
-    '''
-    leng = 0
-    for name in equitys:
-        leng = max(leng, len(equitys[name]))
-    new_equitys = {}
-    for name in equitys:
-        new_equitys[name] = _extend_equity(equitys[name], leng)
-
-    fig = plt.figure(figsize=(10, 5))
-    for name in new_equitys:
-        equity = new_equitys[name]
-        returns = equity.iloc[-1] / equity.iloc[0] - 1
-        label = name + '   ' + '{:.3%}'.format(returns)
-        equity.plot(label=str(label))
-    plt.hlines(100000, 0, leng, color='black', linestyle='--')
-    plt.title(fname)
-    plt.legend()
-    plt.show()
-
-    if isshow:
-        plt.show()
-    if savepath is not None:
-        if not os.path.exists(savepath):
-            os.makedirs(savepath)
-        fig.savefig(os.path.join(savepath, fname))
-
-
-def _extend_equity(equity, leng):
-    new_equity = pd.Series([np.nan for _ in range(leng)])
-    new_equity[0] = equity[0]
-    new_equity[leng] = equity[-1]
-    pos = np.concatenate((np.ones(len(equity) - 2), np.zeros(leng - len(equity) + 2)))
-    permutation = np.random.permutation(leng)
-    pos = pos[permutation]
-    pos = np.concatenate(([0], pos, [0]))
-    new_equity.loc[pos == 1] = equity[1:-1]
-    new_equity = pd.Series.interpolate(new_equity)
-    return new_equity
-
-
-def plot_model(equitys,
+def plot_multi(equitys,
                fname,
                savepath=None,
-               isshow=True):
+               isshow=None,
+               start_date="20121231",
+               end_date="20180701"):
     '''
     plot the same model under different frequency
 
@@ -159,13 +110,13 @@ def plot_model(equitys,
     :return:
     '''
 
-    fig = plt.figure(figsize=(10, 5))
+    fig = plt.figure(figsize=(16, 9))
     for name in equitys:
-        equity = pd.Series(equitys[name])
+        equity = equitys[name]
         returns = equity.iloc[-1] / equity.iloc[0] - 1
         label = name + '   ' + '{:.3%}'.format(returns)
         equity.plot(label=str(label))
-    plt.hlines(100000, 0, len(equity), color='black', linestyle='--')
+    plt.hlines(100000, pd.Timestamp(start_date), pd.Timestamp(end_date), color='black', linestyle='--')
     plt.title(fname)
     plt.legend()
     plt.show()
@@ -173,6 +124,8 @@ def plot_model(equitys,
     if isshow:
         plt.show()
     if savepath is not None:
+        if not os.path.exists(savepath):
+            os.makedirs(savepath)
         fig.savefig(os.path.join(savepath, fname))
 
 def _create_drawdown(cum_returns):
