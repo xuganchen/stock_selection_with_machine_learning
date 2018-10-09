@@ -24,215 +24,263 @@ from matplotlib import cm
 np.random.seed(12345)
 
 
-# # ------------------------------ Training Model ------------------------------
-#
-# modelpath = os.path.join("F:\\DeepLearning\\Model", datetime.now().strftime("%Y%m%d-%H%M%S"))
-# preddatapath = "F:\\DeepLearning\\data\\outsample_total"
-#
-#
-# fpath = "F:\\DeepLearning\\Data"
-# fpath_insample = os.path.join(fpath, "insample")
-# fpath_outsample = os.path.join(fpath, "outsample")
-# X_train = np.load(os.path.join(fpath_insample, "X.npy"))
-# Y_train = np.load(os.path.join(fpath_insample, "Y.npy"))
-# X_test = np.load(os.path.join(fpath_outsample, "X.npy"))
-# Y_test = np.load(os.path.join(fpath_outsample, "Y.npy"))
-#
-#
-# with open("F:\\DeepLearning\\Model\\result_GA.pkl", "rb") as file:
-#     GA = pkl.load(file)
-# GA_factor = GA['best_factors']
-# X_train_GA = X_train[:, GA_factor == 1]
-# Y_train_GA = Y_train
-# X_test_GA = X_test[:, GA_factor == 1]
-# Y_test_GA = Y_test
-#
-# results = pd.DataFrame(columns=['Accuracy', 'Precision', 'Recall', 'F1', 'TPR', 'FPR', 'AUC'])
-#
-# modelList = {
-#     'lr': LogisticRegression,
-#     'rf': RandomForest,
-#     'svm': SupportVectorMachine,
-#     'dnn': DNN,
-#     'nb': NaiveBeyes,
-#     'gbm': GradientBoostingMachine,
-#     'bag': Bagging,
-#     'et': ExtraTrees,
-#     'ada': AdaBoost,
-#     'exs': EnsembleXgbStack
-# }
-#
+# ------------------------------ Training Model ------------------------------
+
+# setting 
+modelpath = os.path.join("F:\\DeepLearning\\Model", datetime.now().strftime("%Y%m%d-%H%M%S"))
+preddatapath = "F:\\DeepLearning\\data\\outsample_total"
+
+
+# loading training and testing data before GA
+fpath = "F:\\DeepLearning\\Data"
+fpath_insample = os.path.join(fpath, "insample")
+fpath_outsample = os.path.join(fpath, "outsample")
+X_train = np.load(os.path.join(fpath_insample, "X.npy"))
+Y_train = np.load(os.path.join(fpath_insample, "Y.npy"))
+X_test = np.load(os.path.join(fpath_outsample, "X.npy"))
+Y_test = np.load(os.path.join(fpath_outsample, "Y.npy"))
+
+
+# loading training and testing data before GA
+with open("F:\\DeepLearning\\Model\\result_GA.pkl", "rb") as file:
+    GA = pkl.load(file)
+GA_factor = GA['best_factors']
+X_train_GA = X_train[:, GA_factor == 1]
+Y_train_GA = Y_train
+X_test_GA = X_test[:, GA_factor == 1]
+Y_test_GA = Y_test
+
+# store model results
+results = pd.DataFrame(columns=['Accuracy', 'Precision', 'Recall', 'F1', 'TPR', 'FPR', 'AUC'])
+
+# list
+modelList = {
+    'lr': LogisticRegression,
+    'rf': RandomForest,
+    'svm': SupportVectorMachine,
+    'dnn': DNN,
+    'nb': NaiveBeyes,
+    'gbm': GradientBoostingMachine,
+    'bag': Bagging,
+    'et': ExtraTrees,
+    'ada': AdaBoost,
+    'exs': EnsembleXgbStack
+}
+
+frequencyList = [3, 5, 7, 10, 12, 15, 18, 20, 25, 30]
+
+
+# training model(before GA)
+GAtype = "beforeGA"
+savemodelpath = os.path.join(modelpath, GAtype)
+
+for modelname in modelList.keys():
+    # initalize model
+    model = modelList[modelname](X_train, Y_train, X_test, Y_test)
+    print("\n\n", "Begin Model: {}".format(model.type))
+
+    # training model 
+    results.loc[model.type.name + "_" + GAtype] = model.evalution()
+    print("The results of " + model.type.name + " model:")
+    print(results.loc[model.type.name + "_" + GAtype])
+
+    # saving model 
+    savepath = os.path.join(savemodelpath, model.type.name)
+    model.save_model(savepath)
+
+    # generate prediction data outsample
+    for frequency in frequencyList:
+        X_portfolio = np.load(os.path.join(preddatapath, "factors_" + str(frequency) + "days.npy"))
+        fname = model.type.name + "_" + str(frequency) + "days"
+        portfolios, portfolio_probas = prediction(model, X_portfolio, savepath, fname)
+
+
+
+# training model(after GA)
+GAtype = "afterGA"
+savemodelpath = os.path.join(modelpath, GAtype)
+
+for modelname in modelList.keys():
+    # initalize model
+    model = modelList[modelname](X_train_GA, Y_train_GA, X_test_GA, Y_test_GA)
+    print("\n\n", "Begin Model: {}".format(model.type))
+
+    # training model 
+    results.loc[model.type.name + "_" + GAtype] = model.evalution()
+    print("The results of " + model.type.name + " model:")
+    print(results.loc[model.type.name + "_" + GAtype])
+
+    # saving model 
+    savepath = os.path.join(savemodelpath, model.type.name)
+    model.save_model(savepath)
+
+    # generate prediction data outsample
+    for frequency in frequencyList:
+        X_portfolio = np.load(os.path.join(preddatapath, "factors_" + str(frequency) + "days.npy"))
+        X_portfolio = np.array([port[:, GA_factor == 1] for port in X_portfolio])
+        fname = model.type.name + "_" + str(frequency) + "days"
+        portfolios, portfolio_probas = prediction(model, X_portfolio, savepath, fname)
+
+
+with open(os.path.join(modelpath, "results.pkl"), 'wb+') as file:
+    pkl.dump(results, file)
+
+
+# ------------------------------ Using BlackLitterman Model ------------------------------
+
+# pred_data_kind="bool"
+pred_data_kind="proba"
+
+# setting 
+modelpath = os.path.join("F:\\DeepLearning\\Model\\20181004-214808")
+datapath = "F:\\DeepLearning\\data\\outsample_total"
+if pred_data_kind == "bool":
+    resultspath = os.path.join("F:\\DeepLearning\\Model\\20181004-214808\\results_from_bool")
+elif pred_data_kind == "proba":
+    resultspath = os.path.join("F:\\DeepLearning\\Model\\20181004-214808\\results_from_probas")
+avgresultspath = os.path.join("F:\\DeepLearning\\Model\\20181004-214808\\results_avg")
+
+if not os.path.exists(resultspath):
+    os.makedirs(resultspath)
+if not os.path.exists(avgresultspath):
+    os.makedirs(avgresultspath)
+
+# list
+GAtypeList = ['beforeGA', 'afterGA']
 # frequencyList = [3, 5, 7, 10, 12, 15, 18, 20, 25, 30]
-#
-#
-# # before GA
-# GAtype = "beforeGA"
-# savemodelpath = os.path.join(modelpath, GAtype)
-#
-# for modelname in modelList.keys():
-#     model = modelList[modelname](X_train, Y_train, X_test, Y_test)
-#     print("\n\n", "Begin Model: {}".format(model.type))
-#     results.loc[model.type.name + "_" + GAtype] = model.evalution()
-#     print("The results of " + model.type.name + " model:")
-#     print(results.loc[model.type.name + "_" + GAtype])
-#
-#     savepath = os.path.join(savemodelpath, model.type.name)
-#     model.save_model(savepath)
-#
-#     for frequency in frequencyList:
-#         X_portfolio = np.load(os.path.join(preddatapath, "factors_" + str(frequency) + "days.npy"))
-#         fname = model.type.name + "_" + str(frequency) + "days"
-#         portfolios, portfolio_probas = prediction(model, X_portfolio, savepath, fname)
-#
-#
-#
-# # after GA
-# GAtype = "afterGA"
-# savemodelpath = os.path.join(modelpath, GAtype)
-#
-# for modelname in modelList.keys():
-#     model = modelList[modelname](X_train_GA, Y_train_GA, X_test_GA, Y_test_GA)
-#     print("\n\n", "Begin Model: {}".format(model.type))
-#     results.loc[model.type.name + "_" + GAtype] = model.evalution()
-#     print("The results of " + model.type.name + " model:")
-#     print(results.loc[model.type.name + "_" + GAtype])
-#
-#     savepath = os.path.join(savemodelpath, model.type.name)
-#     model.save_model(savepath)
-#
-#     for frequency in frequencyList:
-#         X_portfolio = np.load(os.path.join(preddatapath, "factors_" + str(frequency) + "days.npy"))
-#         X_portfolio = np.array([port[:, GA_factor == 1] for port in X_portfolio])
-#         fname = model.type.name + "_" + str(frequency) + "days"
-#         portfolios, portfolio_probas = prediction(model, X_portfolio, savepath, fname)
-#
-#
-# with open(os.path.join(modelpath, "results_afterGA.pkl"), 'wb+') as file:
-#     pkl.dump(results, file)
-#
-# # with open(os.path.join(modelpath, "results.pkl"), "rb") as file:
-# #     results = pkl.load(file)
+frequencyList = [10, 12, 15, 18, 20, 25, 30]
+modelList = {
+    'LR': LogisticRegression,
+    'RF': RandomForest,
+    'SVM': SupportVectorMachine,
+    'DNN': DNN,
+    'NB': NaiveBeyes,
+    'GBM': GradientBoostingMachine,
+    'BAG': Bagging,
+    'ET': ExtraTrees,
+    'ADA': AdaBoost,
+    'EXS': EnsembleXgbStack
+}
 
-
-# # ------------------------------ Using BlackLitterman Model ------------------------------
-#
-# # pred_data_kind="bool"
-# pred_data_kind="proba"
-#
-# modelpath = os.path.join("F:\\DeepLearning\\Model\\20181004-214808")
-# datapath = "F:\\DeepLearning\\data\\outsample_total"
-# if pred_data_kind == "bool":
-#     resultspath = os.path.join("F:\\DeepLearning\\Model\\20181004-214808\\results_from_bool")
-# elif pred_data_kind == "proba":
-#     resultspath = os.path.join("F:\\DeepLearning\\Model\\20181004-214808\\results_from_probas")
-# avgresultspath = os.path.join("F:\\DeepLearning\\Model\\20181004-214808\\results_avg")
-#
-# if not os.path.exists(resultspath):
-#     os.makedirs(resultspath)
-# if not os.path.exists(avgresultspath):
-#     os.makedirs(avgresultspath)
-#
-# GAtypeList = ['beforeGA', 'afterGA']
-# # frequencyList = [3, 5, 7, 10, 12, 15, 18, 20, 25, 30]
-# frequencyList = [10, 12, 15, 18, 20, 25, 30]
-# modelList = {
-#     'LR': LogisticRegression,
-#     'RF': RandomForest,
-#     'SVM': SupportVectorMachine,
-#     'DNN': DNN,
-#     'NB': NaiveBeyes,
-#     'GBM': GradientBoostingMachine,
-#     'BAG': Bagging,
-#     'ET': ExtraTrees,
-#     'ADA': AdaBoost,
-#     'EXS': EnsembleXgbStack
-# }
-# init_equity = 100000
-#
-# ### For BlackLitterman Model
-#
-# return_data = pd.read_hdf(os.path.join(datapath, "return_data.h5"))
-# mean_cum_returns = pd.read_hdf(os.path.join(datapath, "mean_cum_returns.h5"))
-# market_data = pd.read_hdf(os.path.join(datapath, "market_data.h5"))
-# risk_free = pd.read_hdf(os.path.join(datapath, "risk_free.h5"))
-#
-# for GAtype in GAtypeList:
-#     saveGApath = os.path.join(modelpath, GAtype)
-#     for modelname in modelList.keys():
-#         savemodelpath = os.path.join(saveGApath, modelname)
-#         saveresultspath = os.path.join(resultspath, modelname)
-#         if not os.path.exists(saveresultspath):
-#             os.makedirs(saveresultspath)
-#
-#         for frequency in frequencyList:
-#             Y_portfolio = np.load(os.path.join(datapath, "prices_" + str(frequency) + "days.npy"))
-#             benchmark_returns = np.load(os.path.join(datapath, "benchmark_returns_" + str(frequency) + "days.npy"))
-#             days = np.load(os.path.join(datapath, "todays_" + str(frequency) + "days.npy"))
-#             if pred_data_kind == "bool":
-#                 fname = modelname + "_" + str(frequency) + "days_portfolios.npy"
-#             elif pred_data_kind == "proba":
-#                 fname = modelname + "_" + str(frequency) + "days_portfolio_probas.npy"
-#             pred_data = np.load(os.path.join(savemodelpath, fname))
-#
-#             bl = BlackLitterman(return_data, mean_cum_returns, market_data,
-#                                 risk_free, pred_data, days, frequency,
-#                                 pred_data_kind=pred_data_kind)
-#             weights = bl.get_weights()
-#             pngname = "BL_" + GAtype + "_" + modelname + "_" + str(frequency) + "days"
-#             np.save(os.path.join(saveresultspath, pngname + ".npy"), weights)
-#             equitys = backtesting(weights, Y_portfolio, init_equity=init_equity)
-#             bench_equity = np.concatenate(([init_equity],benchmark_returns.cumprod() * init_equity))
-#             days = pd.Series(np.concatenate((days, [20180629]))).apply(lambda x: pd.Timestamp.strptime(str(x), "%Y%m%d"))
-#             equitys = equity = pd.Series(equitys, index=days)
-#             bench_equity = pd.Series(bench_equity, index=days)
-#
-#             plot_backtest(equitys, bench_equity, fname = pngname, savepath = saveresultspath)
-#             results = get_results(equitys, bench_equity, frequency)
-#
-#             with open(os.path.join(saveresultspath, pngname + ".pkl"), "wb+") as file:
-#                 pkl.dump(results, file)
-#             print("Done: ", pngname)
+init_equity = 100000
 
 
 
-# ### For Average Weight
-#
-# for GAtype in GAtypeList:
-#     saveGApath = os.path.join(modelpath, GAtype)
-#     for modelname in modelList.keys():
-#         savemodelpath = os.path.join(saveGApath, modelname)
-#         saveresultspath = os.path.join(avgresultspath, modelname)
-#         if not os.path.exists(saveresultspath):
-#             os.makedirs(saveresultspath)
-#
-#         for frequency in frequencyList:
-#             fname = modelname + "_" + str(frequency) + "days_portfolios.npy"
-#             benchmark_returns = np.load(os.path.join(datapath, "benchmark_returns_" + str(frequency) + "days.npy"))
-#             days = np.load(os.path.join(datapath, "todays_" + str(frequency) + "days.npy"))
-#             pred_data = np.load(os.path.join(savemodelpath, fname))
-#             Y_portfolio = np.load(os.path.join(datapath, "prices_" + str(frequency) + "days.npy"))
-#
-#             weights = get_avg_weight(pred_data)
-#             pngname = "AVG_" + GAtype + "_" + modelname + "_" + str(frequency) + "days"
-#             np.save(os.path.join(saveresultspath, pngname + ".npy"), weights)
-#
-#             equitys = backtesting(weights, Y_portfolio)
-#             bench_equity = np.concatenate(([init_equity],benchmark_returns.cumprod() * init_equity))
-#             days = pd.Series(np.concatenate((days, [20180629]))).apply(lambda x: pd.Timestamp.strptime(str(x), "%Y%m%d"))
-#             equitys = equity = pd.Series(equitys, index=days)
-#             bench_equity = pd.Series(bench_equity, index=days)
-#
-#             plot_backtest(equitys, bench_equity, fname = pngname, savepath = saveresultspath)
-#             results = get_results(equitys, bench_equity, frequency)
-#
-#             with open(os.path.join(saveresultspath, pngname + ".pkl"), "wb+") as file:
-#                 pkl.dump(results, file)
-#             print("Done: ", pngname)
+### For BlackLitterman Model
+
+# loading data
+return_data = pd.read_hdf(os.path.join(datapath, "return_data.h5"))
+mean_cum_returns = pd.read_hdf(os.path.join(datapath, "mean_cum_returns.h5"))
+market_data = pd.read_hdf(os.path.join(datapath, "market_data.h5"))
+risk_free = pd.read_hdf(os.path.join(datapath, "risk_free.h5"))
+
+for GAtype in GAtypeList:
+    saveGApath = os.path.join(modelpath, GAtype)
+    for modelname in modelList.keys():
+        savemodelpath = os.path.join(saveGApath, modelname)
+        saveresultspath = os.path.join(resultspath, modelname)
+        if not os.path.exists(saveresultspath):
+            os.makedirs(saveresultspath)
+
+        for frequency in frequencyList:
+            # loading price data
+            Y_portfolio = np.load(os.path.join(datapath, "prices_" + str(frequency) + "days.npy"))
+
+            # loading HS300 price data
+            benchmark_returns = np.load(os.path.join(datapath, "benchmark_returns_" + str(frequency) + "days.npy"))
+
+            # loading days data for different data
+            days = np.load(os.path.join(datapath, "todays_" + str(frequency) + "days.npy"))
+
+            # loading prediction data
+            if pred_data_kind == "bool":
+                fname = modelname + "_" + str(frequency) + "days_portfolios.npy"
+            elif pred_data_kind == "proba":
+                fname = modelname + "_" + str(frequency) + "days_portfolio_probas.npy"
+            pred_data = np.load(os.path.join(savemodelpath, fname))
+
+            # using BL model 
+            bl = BlackLitterman(return_data, mean_cum_returns, market_data,
+                                risk_free, pred_data, days, frequency,
+                                pred_data_kind=pred_data_kind)
+            weights = bl.get_weights()
+
+            # saving weights from BL model
+            pngname = "BL_" + GAtype + "_" + modelname + "_" + str(frequency) + "days"
+            np.save(os.path.join(saveresultspath, pngname + ".npy"), weights)
+
+            # backtesting 
+            equitys = backtesting(weights, Y_portfolio, init_equity=init_equity)
+
+            # change data structure
+            bench_equity = np.concatenate(([init_equity],benchmark_returns.cumprod() * init_equity))
+            days = pd.Series(np.concatenate((days, [20180629]))).apply(lambda x: pd.Timestamp.strptime(str(x), "%Y%m%d"))
+            equitys = equity = pd.Series(equitys, index=days)
+            bench_equity = pd.Series(bench_equity, index=days)
+
+            # plot equity 
+            plot_backtest(equitys, bench_equity, fname = pngname, savepath = saveresultspath)
+
+            # calculate 
+            results = get_results(equitys, bench_equity, frequency)
+
+            with open(os.path.join(saveresultspath, pngname + ".pkl"), "wb+") as file:
+                pkl.dump(results, file)
+            print("Done: ", pngname)
+
+
+
+### For Average Weight
+
+for GAtype in GAtypeList:
+    saveGApath = os.path.join(modelpath, GAtype)
+    for modelname in modelList.keys():
+        savemodelpath = os.path.join(saveGApath, modelname)
+        saveresultspath = os.path.join(avgresultspath, modelname)
+        if not os.path.exists(saveresultspath):
+            os.makedirs(saveresultspath)
+
+        for frequency in frequencyList:
+            # loading price data
+            fname = modelname + "_" + str(frequency) + "days_portfolios.npy"
+
+            # loading HS300 price data
+            benchmark_returns = np.load(os.path.join(datapath, "benchmark_returns_" + str(frequency) + "days.npy"))
+
+            # loading days data for different data
+            days = np.load(os.path.join(datapath, "todays_" + str(frequency) + "days.npy"))
+
+            # loading prediction data
+            pred_data = np.load(os.path.join(savemodelpath, fname))
+            Y_portfolio = np.load(os.path.join(datapath, "prices_" + str(frequency) + "days.npy"))
+
+            # calculate and save average weights
+            weights = get_avg_weight(pred_data)
+            pngname = "AVG_" + GAtype + "_" + modelname + "_" + str(frequency) + "days"
+            np.save(os.path.join(saveresultspath, pngname + ".npy"), weights)
+
+            # change data structure
+            equitys = backtesting(weights, Y_portfolio)
+            bench_equity = np.concatenate(([init_equity],benchmark_returns.cumprod() * init_equity))
+            days = pd.Series(np.concatenate((days, [20180629]))).apply(lambda x: pd.Timestamp.strptime(str(x), "%Y%m%d"))
+            equitys = equity = pd.Series(equitys, index=days)
+            bench_equity = pd.Series(bench_equity, index=days)
+
+            # plot equity 
+            plot_backtest(equitys, bench_equity, fname = pngname, savepath = saveresultspath)
+
+            # calculate 
+            results = get_results(equitys, bench_equity, frequency)
+
+            with open(os.path.join(saveresultspath, pngname + ".pkl"), "wb+") as file:
+                pkl.dump(results, file)
+            print("Done: ", pngname)
 
 
 
 # ------------------------------ Plot Result ------------------------------
 
+# setting 
 probasresultspath = os.path.join("F:\\DeepLearning\\Model\\20181004-214808\\results_from_probas")
 boolresultspath = os.path.join("F:\\DeepLearning\\Model\\20181004-214808\\results_from_bool")
 avgresultspath = os.path.join("F:\\DeepLearning\\Model\\20181004-214808\\results_avg")
@@ -240,6 +288,7 @@ datapath = "F:\\DeepLearning\\data\\outsample_total"
 savepath = "F:\\DeepLearning\\Model\\20181004-214808\\results_from_probas\\multi"
 
 
+# list
 GAtypeList = ['beforeGA', 'afterGA']
 # frequencyList = [3, 5, 7, 10, 12, 15, 18, 20, 25, 30]
 frequencyList = [10, 12, 15, 18, 20, 25, 30]
@@ -247,6 +296,7 @@ modelList = ['LR', 'RF', 'SVM', 'DNN', 'NB', 'GBM', 'BAG', 'ET', 'ADA', 'EXS']
 init_equity = 100000
 
 
+# calculate HS300 equity
 def get_bench_equity(frequency, datapath, init_equity):
     days = np.load(os.path.join(datapath, "todays_" + str(frequency) + "days.npy"))
     days = pd.Series(np.concatenate((days, [20180629]))).apply(lambda x: pd.Timestamp.strptime(str(x), "%Y%m%d"))
@@ -257,64 +307,62 @@ def get_bench_equity(frequency, datapath, init_equity):
     return bench_equity
 
 
-# ## "By_frequency"
-# savepathBy_frequency = os.path.join(savepath, "By_frequency")
-# for GAtype in GAtypeList:
-#     for modelname in modelList:
-#         probasequity = {}
-#         saveresultspath = os.path.join(probasresultspath, modelname)
-#         for frequency in frequencyList:
-#             pngname = "BL_" + GAtype + "_" + modelname + "_" + str(frequency) + "days"
-#             try:
-#                 with open(os.path.join(saveresultspath, pngname + ".pkl"), "rb") as file:
-#                     result = pkl.load(file)
-#                 probasequity[pngname] = result['equity']
-#             except:
-#                 pass
-#         fname = "BL_" + GAtype + "_" + modelname
-#         plot_multi(probasequity, fname, savepathBy_frequency)
-#
-# ## "By_model"
-# savepathBy_model = os.path.join(savepath, "By_model")
-# for GAtype in GAtypeList:
-#     for frequency in frequencyList:
-#         probasequity = {}
-#         bench_equity = get_bench_equity(20, datapath, init_equity)
-#         probasequity['HS300_' + str(frequency) + "days"] = bench_equity
-#         for modelname in modelList:
-#             saveresultspath = os.path.join(probasresultspath, modelname)
-#             pngname = "BL_" + GAtype + "_" + modelname + "_" + str(frequency) + "days"
-#             try:
-#                 with open(os.path.join(saveresultspath, pngname + ".pkl"), "rb") as file:
-#                     result = pkl.load(file)
-#                 probasequity[pngname] = result['equity']
-#             except:
-#                 pass
-#         fname = "BL_" + GAtype + "_" + str(frequency) + "days"
-#         plot_multi(probasequity, fname, savepathBy_model)
-#
-# ## "By_GAtype"
-# savepathBy_GAtype = os.path.join(savepath, "By_GAtype")
-# for frequency in frequencyList:
-#     for modelname in modelList:
-#         probasequity = {}
-#         bench_equity = get_bench_equity(20, datapath, init_equity)
-#         probasequity['HS300_' + str(frequency) + "days"] = bench_equity
-#         for GAtype in GAtypeList:
-#             saveresultspath = os.path.join(probasresultspath, modelname)
-#             pngname = "BL_" + GAtype + "_" + modelname + "_" + str(frequency) + "days"
-#             try:
-#                 with open(os.path.join(saveresultspath, pngname + ".pkl"), "rb") as file:
-#                     result = pkl.load(file)
-#                 probasequity[pngname] = result['equity']
-#             except:
-#                 pass
-#         fname = "BL_" + modelname + "_" + str(frequency) + "days"
-#         plot_multi(probasequity, fname, savepathBy_GAtype)
+## "By_frequency"
+savepathBy_frequency = os.path.join(savepath, "By_frequency")
+for GAtype in GAtypeList:
+    for modelname in modelList:
+        probasequity = {}
+        saveresultspath = os.path.join(probasresultspath, modelname)
+        for frequency in frequencyList:
+            pngname = "BL_" + GAtype + "_" + modelname + "_" + str(frequency) + "days"
+            try:
+                with open(os.path.join(saveresultspath, pngname + ".pkl"), "rb") as file:
+                    result = pkl.load(file)
+                probasequity[pngname] = result['equity']
+            except:
+                pass
+        fname = "BL_" + GAtype + "_" + modelname
+        plot_multi(probasequity, fname, savepathBy_frequency)
 
+## "By_model"
+savepathBy_model = os.path.join(savepath, "By_model")
+for GAtype in GAtypeList:
+    for frequency in frequencyList:
+        probasequity = {}
+        bench_equity = get_bench_equity(20, datapath, init_equity)
+        probasequity['HS300_' + str(frequency) + "days"] = bench_equity
+        for modelname in modelList:
+            saveresultspath = os.path.join(probasresultspath, modelname)
+            pngname = "BL_" + GAtype + "_" + modelname + "_" + str(frequency) + "days"
+            try:
+                with open(os.path.join(saveresultspath, pngname + ".pkl"), "rb") as file:
+                    result = pkl.load(file)
+                probasequity[pngname] = result['equity']
+            except:
+                pass
+        fname = "BL_" + GAtype + "_" + str(frequency) + "days"
+        plot_multi(probasequity, fname, savepathBy_model)
 
+## "By_GAtype"
+savepathBy_GAtype = os.path.join(savepath, "By_GAtype")
+for frequency in frequencyList:
+    for modelname in modelList:
+        probasequity = {}
+        bench_equity = get_bench_equity(20, datapath, init_equity)
+        probasequity['HS300_' + str(frequency) + "days"] = bench_equity
+        for GAtype in GAtypeList:
+            saveresultspath = os.path.join(probasresultspath, modelname)
+            pngname = "BL_" + GAtype + "_" + modelname + "_" + str(frequency) + "days"
+            try:
+                with open(os.path.join(saveresultspath, pngname + ".pkl"), "rb") as file:
+                    result = pkl.load(file)
+                probasequity[pngname] = result['equity']
+            except:
+                pass
+        fname = "BL_" + modelname + "_" + str(frequency) + "days"
+        plot_multi(probasequity, fname, savepathBy_GAtype)
 
-
+# getting index results
 probasresults = pd.DataFrame(columns=['tot_return', 'annual_return', 'cagr', 'max_drawdown', 'sharpe', 'sortino', 'IR'])
 for GAtype in GAtypeList:
     for modelname in modelList:
@@ -338,7 +386,7 @@ for GAtype in GAtypeList:
 probasresults['frequency'] = probasresults.index.to_series().apply(lambda x: x.split("_")[-1])
 probasresults['is_GA'] = probasresults.index.to_series().apply(lambda x: x.split("_")[1])
 probasresults['model'] = probasresults.index.to_series().apply(lambda x: x.split("_")[2])
-# probasresults.to_excel(probasresultspath + ".xlsx")
+probasresults.to_excel(probasresultspath + ".xlsx")
 
 
 

@@ -74,6 +74,18 @@ def backtesting(portfolios_weight,
 
 def plot_backtest(equity, bench_equity, fname = None, savepath = None, isshow = None,
                   start_date="20121231", end_date="20180701"):
+    '''
+    plot backtest equity curve
+
+    :param equity:
+    :param bench_equity:
+    :param fname:
+    :param savepath:
+    :param isshow:
+    :param start_date:
+    :param end_date:
+    :return:
+    '''
     fig = plt.figure(figsize=(10, 5))
     returns = equity[-1] / equity[0] - 1
     returns_ben = bench_equity[-1] / bench_equity[0] - 1
@@ -129,6 +141,12 @@ def plot_multi(equitys,
         fig.savefig(os.path.join(savepath, fname))
 
 def _create_drawdown(cum_returns):
+    '''
+    calculate drawdown
+
+    :param cum_returns:
+    :return:
+    '''
     idx = cum_returns.index
     hwm = cum_returns.expanding(min_periods=1).max()
     dd = pd.DataFrame(index = idx)
@@ -141,6 +159,16 @@ def _create_drawdown(cum_returns):
 
 
 def get_results(equity, bench_equity, frequency, periods = 250):
+    '''
+    calculate index results
+
+    :param equity:
+    :param bench_equity:
+    :param frequency:
+    :param periods:
+    :return:
+    '''
+
     res_equity = pd.Series(equity).sort_index()
 
     # Returns

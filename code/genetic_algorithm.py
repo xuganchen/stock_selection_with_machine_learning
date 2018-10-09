@@ -14,6 +14,18 @@ class GA(object):
                  crossoverProb = 0.2,
                  mutationProb = 0.1,
                  iteration = 100):
+        '''
+        genetic algorithm (GA)
+
+        :param X_train:
+        :param Y_train:
+        :param X_test:
+        :param Y_test:
+        :param populationSize:
+        :param crossoverProb:
+        :param mutationProb:
+        :param iteration:
+        '''
 
         self.X_train = X_train
         self.Y_train = Y_train
@@ -35,6 +47,11 @@ class GA(object):
         self.down = self.populationSize // 2
 
     def newPopulation(self):
+        '''
+        initailize population
+
+        :return:
+        '''
         print("  Begin newPopulation")
         population = self._generate_random()
 
@@ -57,6 +74,12 @@ class GA(object):
         return chromosomes
 
     def CheckChromosome(self, chromosome):
+        '''
+        check the chromosome whether satisfies condition
+
+        :param chromosome:
+        :return:
+        '''
         if self.down <= np.sum(chromosome) <= self.up:
             return True
         else:
@@ -64,6 +87,13 @@ class GA(object):
 
 
     def Selection(self, init_population, cum_fitness):
+        '''
+        selection
+
+        :param init_population:
+        :param cum_fitness:
+        :return:
+        '''
         print("  Begin Selection")
         sel_population = np.zeros_like(init_population)
         for i, randomnum in enumerate(np.random.rand(self.populationSize)):
@@ -74,6 +104,13 @@ class GA(object):
 
 
     def Crossover(self, init_population, population):
+        '''
+        crossover
+
+        :param init_population:
+        :param population:
+        :return:
+        '''
         print("  Begin Crossover")
         is_crossover = 1 - np.random.binomial(1, self.crossoverProb, self.populationSize // 2)
         for i in np.where(is_crossover)[0]:
@@ -106,6 +143,12 @@ class GA(object):
         return population
 
     def Mutation(self, population):
+        '''
+
+
+        :param population:
+        :return:
+        '''
         print("  Begin Mutation")
         is_mutate = 1 - np.random.binomial(1, self.mutationProb, self.populationSize)
         for i in np.where(is_mutate)[0]:
@@ -120,6 +163,12 @@ class GA(object):
         return population
 
     def Fitness(self, population):
+        '''
+
+
+        :param population:
+        :return:
+        '''
         print("  Begin Fitness")
         fitness = np.zeros(self.populationSize)
         for i in range(self.populationSize):
@@ -138,6 +187,11 @@ class GA(object):
 
 
     def Start(self):
+        '''
+        start GA
+
+        :return:
+        '''
         init_population = self.newPopulation()
         _, cum_fitness, _ = self.Fitness(init_population)
 

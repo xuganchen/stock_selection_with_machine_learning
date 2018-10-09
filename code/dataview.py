@@ -10,6 +10,12 @@ warnings.filterwarnings("ignore")
 class DataView(object):
     def __init__(self,
                  data_config = None):
+        '''
+        dataview for data
+        learn from "jaqs" and "jaqs_fxdayu"
+
+        :param data_config:
+        '''
         if data_config is None:
             self.data_config = {
                 "remote.data.address": "tcp://data.quantos.org:8910",

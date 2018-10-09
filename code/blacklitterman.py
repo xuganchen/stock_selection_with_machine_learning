@@ -27,6 +27,22 @@ class BlackLitterman(object):
                  delta = 0.5,
                  fpath = None
                  ):
+        '''
+        Black Litterman model
+
+        :param return_data:
+        :param mean_cum_returns:
+        :param market_data:
+        :param risk_free:
+        :param pred_data:
+        :param days:
+        :param freq:
+        :param pred_data_kind:
+        :param cum_freq:
+        :param tau:
+        :param delta:
+        :param fpath:
+        '''
         self.return_data = return_data
         self.mean_cum_returns = mean_cum_returns
         self.market_data = market_data
@@ -102,6 +118,12 @@ class BlackLitterman(object):
 
 
     def get_weights(self, a=0.036):
+        '''
+        calculate weights
+
+        :param a:
+        :return:
+        '''
         weights = []
         for index in range(len(self.days)):
             today = self.days[index]
