@@ -1,6 +1,9 @@
 # Myself
 code/process_results.ipynb
 code/try_dataview.ipynb
+code/factors/finIndicatormd.md
+code/factors/technical_index.py
+code/factors/technical_index_prepare.ipynb
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
