@@ -1,45 +1,49 @@
 # stock_selection_with_machine_learning
 Stock selection with machine learning 
 
-* code:
-  the code of the project
+### report
 
-  * run.py 
+http://xuganchen.com/download/20181008StockML.pdf
 
-    running all models in model dictionary
+### code:
+the code of the project
 
-  * factors:
+* run.py 
 
-    all indicators is get from [tushare](https://tushare.pro/) and calculated with [talib](https://github.com/mrjbq7/ta-lib)
+  running all models in model dictionary
 
-    * finIndicatormd.md: finincial indicators lists
+* factors:
 
-    * technical_index.py: technical indicators lists
+  all indicators is get from [tushare](https://tushare.pro/) and calculated with [talib](https://github.com/mrjbq7/ta-lib)
 
-  * model:
+  * finIndicatormd.md: finincial indicators lists
 
-    all model class dictionary
+  * technical_index.py: technical indicators lists
 
-    * base.py: abstract model class
+* model:
 
-    * \_\_init\_\_.py: import model
+  all model class dictionary
 
-  * portfolio.py
+  * base.py: abstract model class
 
-    calculate the equity when we have the weight of portfolio and plot the equity
+  * \_\_init\_\_.py: import model
 
-  * genetic_algorithm.py
+* portfolio.py
 
-    Genatic Algorithm using in factors selection
+  calculate the equity when we have the weight of portfolio and plot the equity
 
-  * dataview.py
+* genetic_algorithm.py
 
-    load and process data from [jaqs](https://github.com/quantOS-org/JAQS)
+  Genatic Algorithm using in factors selection
 
-  * data_generate.py
-  
-    generate dataview data into the format using in training model
+* dataview.py
 
-  * blacklitterman.py
+  load and process data from [jaqs](https://github.com/quantOS-org/JAQS)
 
-    the Black Litterman Model 
+* data_generate.py
+
+  generate dataview data into the format using in training model
+
+* blacklitterman.py
+
+  the Black Litterman Model 
