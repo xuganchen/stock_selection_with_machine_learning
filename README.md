@@ -3,8 +3,7 @@ Stock selection with machine learning
 
 ### report
 
-* CSI 300 Stock Strategy Based on Machine Learning and BL Model, with Yufeng Hu, Yinglu Shi, Mingyuan Tang and Tianhao Zhang, 2019
-  * http://xuganchen.com/download/20181008StockML.pdf
+* [CSI 300 Stock Strategy Based on Machine Learning and BL Model](http://xuganchen.com/download/20181008StockML.pdf), with Yufeng Hu, Yinglu Shi, Mingyuan Tang and Tianhao Zhang, 2019
   * The First UBS Global Quantitative Competition, Seventh Price in National Finals, 2018
 
 
